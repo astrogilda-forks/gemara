@@ -47,6 +47,16 @@ package gemara
 	requirement: #EntryMapping
 	// Plan maps to the policy assessment plan being executed.
 	plan?: #EntryMapping @go(Plan,optional=nillable)
+	// Method maps to the AcceptedMethod, declared in the same Policy as plan, that produced this result.
+	// It mirrors ActionResult.method on the enforcement side, so two logs against one plan can be told
+	// apart by the method that ran rather than by their message prose.
+	method?: #EntryMapping @go(Method,optional=nillable)
+	// A method is verified against the plan it belongs to, so a log naming a method names its plan,
+	// and both resolve through the same Policy reference.
+	if method != _|_ {
+		plan: "reference-id": method."reference-id"
+	}
+
 	// Description provides a summary of the assessment procedure.
 	description: string
 	// Result is the overall outcome of the assessment procedure, matching the result of the last step that was run.

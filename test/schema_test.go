@@ -108,9 +108,12 @@ func TestSchemaValidation(t *testing.T) {
 		// EvaluationLog — positive
 		{"valid PVTR baseline scan", "./test-data/pvtr-baseline-scan.yaml", "#EvaluationLog", false, ""},
 		{"assessments that never ran omit start", "./test-data/good-evaluation-log-unstarted.yaml", "#EvaluationLog", false, ""},
+		{"assessment logs told apart by the method that ran", "./test-data/good-evaluation-log-method.yaml", "#EvaluationLog", false, ""},
 
 		// EvaluationLog — negative
 		{"executed assessment missing start", "./test-data/bad-evaluation-log-missing-start.yaml", "#EvaluationLog", true, ""},
+		{"method named without a plan to verify it against", "./test-data/bad-evaluation-log-method-without-plan.yaml", "#EvaluationLog", true, "plan"},
+		{"method from a different policy than its plan", "./test-data/bad-evaluation-log-method-other-policy.yaml", "#EvaluationLog", true, "reference-id"},
 
 		// EnforcementLog — positive
 		{"valid enforcement log", "./test-data/good-enforcement-log.yaml", "#EnforcementLog", false, ""},

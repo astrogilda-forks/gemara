@@ -1,0 +1,37 @@
+metadata:
+  id: EVAL-METHOD-NO-PLAN
+  type: EvaluationLog
+  gemara-version: "1.1.0"
+  version: 1.0.0
+  description: A log names the method that ran and no plan to verify it against
+  author:
+    id: pvtr
+    name: PVTR
+    type: Software
+result: Passed
+target:
+  id: github-repo
+  name: GitHub Repository
+  type: Software
+evaluations:
+- name: access control
+  control:
+    reference-id: OSPS-B
+    entry-id: OSPS-AC-01
+  result: Passed
+  message: Both methods agree
+  assessment-logs:
+  - requirement:
+      entry-id: OSPS-AC-01.01
+    method:
+      reference-id: ORG-POLICY
+      entry-id: method-mfa-api-check
+    description: Verify that multi-factor authentication is required.
+    result: Passed
+    message: The organization settings API reports MFA as required
+    applicability:
+    - Maturity Level 1
+    steps:
+    - github.com/revanite-io/pvtr-github-repo/evaluation_plans/osps/access_control.orgRequiresMFA
+    steps-executed: 1
+    start: 2025-08-22T16:02:00.000000000Z

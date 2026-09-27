@@ -38,7 +38,7 @@ cuefmtcheck:
 
 lintcue:
 	@echo "  >  Linting CUE files (with module support) ..."
-	@cue eval . --all-errors --verbose
+	@cue eval . --all-errors
 
 #
 # SECURITY INSIGHTS VALIDATION

@@ -23,7 +23,7 @@ metadata:
     - id: enforcement-log
       title: "Example Enforcement Log"
       version: "2025-08-22"
-      url: "oci://registry.example.com/enforcement-logs/enforcement-log-001@sha256:5f0c3b2a9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a"
+      url: "oci://registry.example.com:5000/enforcement-logs/enforcement-log-001:2025-08-22@sha256:5f0c3b2a9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a"
     - id: github-api
       title: "GitHub Dependency Graph API"
       version: "2026"

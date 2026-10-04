@@ -34,6 +34,14 @@ import "list"
 			_criteriaValidation: "\(i)": _validCriteriaIds & list.Contains(r."criteria-reference"."reference-id")
 		}
 	}
+
+	if metadata."mapping-references" != _|_ {
+		// An OCI reference by tag does not pin the bytes it resolves to, so evidence citing one must carry its own digest
+		let _tagOnlyOCI = {for m in metadata."mapping-references" if m.url != _|_ if m.url =~ "^oci://" && m.url !~ "@[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$" {(m.id): true}}
+		for r in results if r.evidence != _|_ for e in r.evidence if e.source != _|_ if _tagOnlyOCI[e.source."reference-id"] != _|_ {
+			_ociTagRequiresDigest: "\(e.id)": true & (e.source.digest != _|_)
+		}
+	}
 }
 
 // ResultType classifies the nature of an audit result

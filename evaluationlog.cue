@@ -13,6 +13,14 @@ package gemara
 	// result is the aggregate outcome across all evaluations in this log
 	result: #Result
 	evaluations: [#ControlEvaluation, ...#ControlEvaluation] @go(Evaluations,type=[]*ControlEvaluation)
+
+	if metadata."mapping-references" != _|_ {
+		// An OCI reference by tag does not pin the bytes it resolves to, so evidence citing one must carry its own digest
+		let _tagOnlyOCI = {for m in metadata."mapping-references" if m.url != _|_ if m.url =~ "^oci://" && m.url !~ "@[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$" {(m.id): true}}
+		for c in evaluations for a in c."assessment-logs" if a.evidence != _|_ for e in a.evidence if e.source != _|_ if _tagOnlyOCI[e.source."reference-id"] != _|_ {
+			_ociTagRequiresDigest: "\(e.id)": true & (e.source.digest != _|_)
+		}
+	}
 }
 
 // ControlEvaluation contains the results of evaluating a single Layer 5 control.

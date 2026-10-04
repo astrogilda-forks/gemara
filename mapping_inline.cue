@@ -73,6 +73,13 @@ package gemara
 	"entry-id"?: string @go(EntryId)
 
 	// digest is a cryptographic hash of the observed content at collection time; format: algorithm:encoded (e.g. sha256:abc123...)
+	// The digest always hashes the resolved evidence content, not the MappingReference.url
+	// resource identity: the full content retrieved, the same bytes payload would hold if the
+	// evidence were inlined. coordinate and entry-id help a reader locate the evidence and do
+	// not narrow what is hashed. A producer MAY omit digest only when the locator is
+	// content-addressed and resolves to exactly the evidence bytes; otherwise digest MUST be
+	// present. AuditLog and EvaluationLog reject the case the schema can decide: evidence
+	// citing an oci:// reference by tag alone, with no @algorithm:encoded, and no digest.
 	digest?: =~"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$"
 
 	// remarks is prose regarding this evidence reference

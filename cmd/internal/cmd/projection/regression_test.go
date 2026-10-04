@@ -41,6 +41,7 @@ func TestRegexConstraintsReachTheDocument(t *testing.T) {
 		{"LexiconReference", "url"},
 		{"MappingReference", "url"},
 		{"EvidenceMapping", "digest"},
+		{"ExecutionEnvironment", "config-digest"},
 	} {
 		if p, _ := propOf(t, schemas, tc.schema, tc.field)["pattern"].(string); p == "" {
 			t.Errorf("%s.%s has no pattern", tc.schema, tc.field)

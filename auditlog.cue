@@ -46,19 +46,21 @@ import "list"
 		for id, occurrences in _evidenceByID
 		for p, first in occurrences
 		for q, second in occurrences
-		if p < q && first != second {
+		if p < q
+		if first != second {
 			_evidenceIDReuse: (id): error("evidence id \(id) names two different evidence items in this log")
 		}
 
 		// An evidence source names where the evidence came from, so its reference-id
-		// must be a mapping reference declared in this log's metadata.
+		// must be a mapping reference declared in this log's metadata. The check is
+		// an assignment rather than a condition, because an assignment tolerates an
+		// item that is incomplete and a condition fails on one, hiding what is missing.
 		_declaredReferenceIDs: [if metadata."mapping-references" != _|_ for r in metadata."mapping-references" {r.id}]
-		for i, r in results
+		for r in results
 		if r.evidence != _|_
-		for k, item in r.evidence
-		if item.source != _|_
-		if !list.Contains(_declaredReferenceIDs, item.source."reference-id") {
-			_evidenceSourceUndeclared: "\(i).\(k)": error("evidence \(item.id) names source \(item.source."reference-id"), which is not declared in metadata.mapping-references")
+		for item in r.evidence
+		if item.source != _|_ {
+			_evidenceSourceDeclared: "evidence \(item.id) names a source that is not declared in metadata.mapping-references": true & list.Contains(_declaredReferenceIDs, item.source."reference-id")
 		}
 	}
 }

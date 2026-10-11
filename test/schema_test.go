@@ -13,6 +13,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	cueerrors "cuelang.org/go/cue/errors"
 	"cuelang.org/go/cue/load"
 	cuejson "cuelang.org/go/encoding/json"
 	cueyaml "cuelang.org/go/encoding/yaml"
@@ -546,6 +547,74 @@ func TestEvidenceSourceReference(t *testing.T) {
 			}
 			if !tt.wantErr && err != nil {
 				t.Errorf("unexpected validation error: %v", err)
+			}
+		})
+	}
+}
+
+// TestIncompleteEvidenceReportsWhatIsMissing guards the log-level evidence rules
+// against failing on an evidence item that is itself incomplete. An item with
+// neither a payload nor a source must be reported as missing its source, not as
+// an error from inside a rule that compared or looked it up.
+func TestIncompleteEvidenceReportsWhatIsMissing(t *testing.T) {
+	tests := []struct {
+		name       string
+		file       string
+		definition string
+		edit       func(doc map[string]any)
+	}{
+		{
+			name:       "evaluation log",
+			file:       "./test-data/good-evaluation-log-evidence.yaml",
+			definition: "#EvaluationLog",
+			edit: func(doc map[string]any) {
+				evaluation := doc["evaluations"].([]any)[0].(map[string]any)
+				assessment := evaluation["assessment-logs"].([]any)[0].(map[string]any)
+				delete(assessment["evidence"].([]any)[0].(map[string]any), "source")
+			},
+		},
+		{
+			name:       "audit log",
+			file:       "./test-data/bad-audit-log-evidence-neither.yaml",
+			definition: "#AuditLog",
+			edit:       func(map[string]any) {},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := os.ReadFile(tt.file)
+			if err != nil {
+				t.Fatalf("read fixture: %v", err)
+			}
+			file, err := cueyaml.Extract(tt.file, data)
+			if err != nil {
+				t.Fatalf("parse fixture: %v", err)
+			}
+			var doc map[string]any
+			if err := schemaCtx.BuildFile(file).Decode(&doc); err != nil {
+				t.Fatalf("decode fixture: %v", err)
+			}
+			tt.edit(doc)
+			edited, err := json.Marshal(doc)
+			if err != nil {
+				t.Fatalf("encode edited fixture: %v", err)
+			}
+
+			// JSON is valid YAML. The YAML validator is the one that requires
+			// concrete values, which is what reports a missing required field.
+			err = cueyaml.Validate(edited, schemaValue.LookupPath(cue.ParsePath(tt.definition)))
+			if err == nil {
+				t.Fatal("expected validation error, got nil")
+			}
+			details := cueerrors.Details(err, nil)
+			if !strings.Contains(details, `source."reference-id"`) {
+				t.Errorf("error does not name the missing source:\n%s", details)
+			}
+			for _, noise := range []string{"invalid left-hand value", "list.Contains"} {
+				if strings.Contains(details, noise) {
+					t.Errorf("error comes from inside a rule (%q) rather than naming what is missing:\n%s", noise, details)
+				}
 			}
 		})
 	}

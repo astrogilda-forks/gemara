@@ -16,8 +16,18 @@ import "list"
 	result: #Result
 	evaluations: [#ControlEvaluation, ...#ControlEvaluation] @go(Evaluations,type=[]*ControlEvaluation)
 
-	// Within one log an evidence id names exactly one evidence item. The same
-	// item may be repeated under its id; two different items may not share one.
+	// Within one evidence list an id appears once: listing an item twice in the
+	// same place says nothing.
+	for i, evaluation in evaluations
+	for j, assessment in evaluation."assessment-logs"
+	if assessment.evidence != _|_ {
+		_uniqueEvidenceIDsInList: "\(i).\(j)": {for k, item in assessment.evidence {(item.id): k}}
+	}
+
+	// Across the log an evidence id names exactly one evidence item. The same
+	// item may appear under its id in another assessment's evidence, which is how
+	// one artifact supports several results; two different items may not share
+	// an id.
 	_evidenceByID: {
 		for i, evaluation in evaluations
 		for j, assessment in evaluation."assessment-logs"

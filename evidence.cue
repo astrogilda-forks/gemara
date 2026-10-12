@@ -23,10 +23,12 @@ package gemara
 // around it.
 #Evidence: {
 	// id identifies this evidence item within its log, so that a citation can
-	// point at it. Within one log an id names exactly one item: the same item may
-	// be repeated under its id, but two different items may not share one. It
-	// identifies the record in the log; source.reference-id identifies where the
-	// evidence came from.
+	// point at it. Within one log an id names exactly one item. It appears once
+	// in any one evidence list. The same item may appear again under its id in
+	// another evidence list of the log, which is how one artifact supports
+	// several results, but two different items may not share an id. It identifies
+	// the record in the log; source.reference-id identifies where the evidence
+	// came from.
 	id: string
 
 	// type says what kind of thing this evidence is, where media-type says how to

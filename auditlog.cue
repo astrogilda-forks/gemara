@@ -34,8 +34,17 @@ import "list"
 			_criteriaValidation: "\(i)": _validCriteriaIds & list.Contains(r."criteria-reference"."reference-id")
 		}
 
-		// Within one log an evidence id names exactly one evidence item. The same
-		// item may be repeated under its id; two different items may not share one.
+		// Within one evidence list an id appears once: listing an item twice in the
+		// same place says nothing.
+		for i, r in results
+		if r.evidence != _|_ {
+			_uniqueEvidenceIDsInList: "\(i)": {for k, item in r.evidence {(item.id): k}}
+		}
+
+		// Across the log an evidence id names exactly one evidence item. The same
+		// item may appear under its id in another result's evidence, which is how
+		// one artifact supports several results; two different items may not share
+		// an id.
 		_evidenceByID: {
 			for i, r in results
 			if r.evidence != _|_

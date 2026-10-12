@@ -53,9 +53,24 @@ evaluations:
         coordinate: "/orgs/gemaraproj/settings"
       payload:
         two_factor_requirement_enabled: true
+  # The same id under another assessment, naming different evidence.
+  - requirement:
+      reference-id: OSPS-B
+      entry-id: OSPS-AC-01.02
+    description: Verify that administrative access is restricted.
+    result: Passed
+    message: Verify that administrative access is restricted.
+    applicability:
+    - Maturity Level 1
+    steps:
+    - github.com/revanite-io/pvtr-github-repo/evaluation_plans/osps/access_control.adminAccess
+    steps-executed: 1
+    start: 2026-03-28T04:11:00Z
+    end: 2026-03-28T04:11:02Z
+    evidence:
     - id: EV-AC-01-01
       type: api-response
-      collected-at: 2026-03-28T04:10:01Z
+      collected-at: 2026-03-28T04:11:01Z
       description: Organization member roles
       source:
         reference-id: github-api

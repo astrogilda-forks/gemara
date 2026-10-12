@@ -123,7 +123,8 @@ func TestSchemaValidation(t *testing.T) {
 		{"download-url with no URI scheme", "./test-data/bad-evaluation-log-download-url-no-scheme.yaml", "#EvaluationLog", true, "\"download-url\""},
 		{"media-type with no subtype separator", "./test-data/bad-evaluation-log-media-type-malformed.yaml", "#EvaluationLog", true, "\"media-type\""},
 		{"inline payload with a source digest", "./test-data/bad-evaluation-log-evidence-payload-with-digest.yaml", "#EvaluationLog", true, "inline payload cannot also have a source digest"},
-		{"one evidence id naming two different items", "./test-data/bad-evaluation-log-evidence-id-reused.yaml", "#EvaluationLog", true, "names two different evidence items"},
+		{"one evidence id naming different items in two assessments", "./test-data/bad-evaluation-log-evidence-id-reused.yaml", "#EvaluationLog", true, "names two different evidence items"},
+		{"one evidence item listed twice in one evidence list", "./test-data/bad-evaluation-log-evidence-id-repeated-in-list.yaml", "#EvaluationLog", true, "_uniqueEvidenceIDsInList"},
 		{"evidence source that is not declared", "./test-data/bad-evaluation-log-evidence-source-undeclared.yaml", "#EvaluationLog", true, "not declared in metadata.mapping-references"},
 		{"entry-id on evidence that is not a Gemara artifact", "./test-data/bad-evaluation-log-evidence-entry-id-not-artifact.yaml", "#EvaluationLog", true, "entry-id is only for evidence that is a Gemara artifact"},
 

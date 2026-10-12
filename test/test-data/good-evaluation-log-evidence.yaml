@@ -6,7 +6,7 @@ metadata:
   description: >
     Evaluation log exercising the shapes evidence can take: addressed with a full
     description of the content, addressed through the mapping reference, addressed
-    with no integrity claim, and carried inline.
+    with no integrity claim, carried inline, and one item reused by two assessments.
   author:
     id: pvtr
     name: PVTR
@@ -55,7 +55,7 @@ evaluations:
       source:
         reference-id: github-api
         coordinate: "/orgs/gemaraproj/settings"
-        download-url: "https://api.github.com/orgs/gemaraproj/settings"
+        download-url: "https://example.com/storage/payload.json"
         digest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         size: 4096
         media-type: application/json
@@ -84,6 +84,20 @@ evaluations:
         reference-id: github-api
         coordinate: "/orgs/gemaraproj/members?role=admin"
         digest: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    # The organization settings again, because this assessment relied on them too.
+    # It is the same item under the same id, which is what ties the two
+    # assessments to one piece of evidence. Key order does not matter.
+    - source:
+        media-type: application/json
+        size: 4096
+        digest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        download-url: "https://example.com/storage/payload.json"
+        coordinate: "/orgs/gemaraproj/settings"
+        reference-id: github-api
+      description: Organization settings showing org-wide MFA enforcement
+      collected-at: 2026-03-28T04:10:01Z
+      type: api-response
+      id: EV-AC-01-01
   # A download-url with no digest makes no integrity claim. The second item is
   # carried inline: it may state a media-type, but not a digest, size or download-url.
   - requirement:
@@ -106,7 +120,7 @@ evaluations:
       description: Branch protection settings
       source:
         reference-id: github-api
-        download-url: "https://api.github.com/repos/gemaraproj/gemara/branches/main/protection"
+        download-url: "https://example.com/storage/branch-protection.json"
     - id: EV-AC-01-04
       type: api-response
       collected-at: 2026-03-28T04:12:01Z

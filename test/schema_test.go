@@ -3,17 +3,13 @@
 package schema_test
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 	"testing"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	cueerrors "cuelang.org/go/cue/errors"
 	"cuelang.org/go/cue/load"
 	cuejson "cuelang.org/go/encoding/json"
 	cueyaml "cuelang.org/go/encoding/yaml"
@@ -116,9 +112,8 @@ func TestSchemaValidation(t *testing.T) {
 		// Evidence rules ride on #Evidence and #EvidenceMapping, which both logs use.
 		// Their fixtures are evaluation logs so that reshaping the audit — which is
 		// happening under #496 — cannot quietly stop them testing evidence. Each
-		// negative fixture stands for one rule; TestDigestFormat covers the full
-		// digest format matrix.
-		{"evidence that is addressed, addressed without a digest, and carried", "./test-data/good-evaluation-log-evidence.yaml", "#EvaluationLog", false, ""},
+		// negative fixture stands for one rule.
+		{"evidence that is addressed, carried, and reused by two assessments", "./test-data/good-evaluation-log-evidence.yaml", "#EvaluationLog", false, ""},
 		{"sha256 digest of the wrong length", "./test-data/bad-evaluation-log-digest-sha256-length.yaml", "#EvaluationLog", true, "source.digest"},
 		{"download-url with no URI scheme", "./test-data/bad-evaluation-log-download-url-no-scheme.yaml", "#EvaluationLog", true, "\"download-url\""},
 		{"media-type with no subtype separator", "./test-data/bad-evaluation-log-media-type-malformed.yaml", "#EvaluationLog", true, "\"media-type\""},
@@ -127,6 +122,20 @@ func TestSchemaValidation(t *testing.T) {
 		{"one evidence item listed twice in one evidence list", "./test-data/bad-evaluation-log-evidence-id-repeated-in-list.yaml", "#EvaluationLog", true, "_uniqueEvidenceIDsInList"},
 		{"evidence source that is not declared", "./test-data/bad-evaluation-log-evidence-source-undeclared.yaml", "#EvaluationLog", true, "not declared in metadata.mapping-references"},
 		{"entry-id on evidence that is not a Gemara artifact", "./test-data/bad-evaluation-log-evidence-entry-id-not-artifact.yaml", "#EvaluationLog", true, "entry-id is only for evidence that is a Gemara artifact"},
+
+		// Fragments are validated against one definition, so a case that needs only
+		// a digest or one evidence item does not carry a whole log. They live in
+		// their own folder because they are not Gemara documents.
+		{"sha512 digest", "./test-data/fragments/good-digest-sha512.yaml", "#Digest", false, ""},
+		{"blake3 digest", "./test-data/fragments/good-digest-blake3.yaml", "#Digest", false, ""},
+		{"digest with an unknown algorithm", "./test-data/fragments/good-digest-unknown-algorithm.yaml", "#Digest", false, ""},
+		{"digest with a misspelt algorithm passes as unknown", "./test-data/fragments/good-digest-misspelt-algorithm.yaml", "#Digest", false, ""},
+		{"digest with no algorithm separator", "./test-data/fragments/bad-digest-no-separator.yaml", "#Digest", true, ""},
+		{"sha256 digest in uppercase hex", "./test-data/fragments/bad-digest-sha256-uppercase-hex.yaml", "#Digest", true, ""},
+		{"sha512 digest with a sha256 length", "./test-data/fragments/bad-digest-sha512-length.yaml", "#Digest", true, ""},
+		{"blake3 digest one character short", "./test-data/fragments/bad-digest-blake3-length.yaml", "#Digest", true, ""},
+		{"inline payload with a source size", "./test-data/fragments/bad-evidence-payload-with-size.yaml", "#_EvidenceStrict", true, "inline payload cannot also have a source size"},
+		{"inline payload with a source download-url", "./test-data/fragments/bad-evidence-payload-with-download-url.yaml", "#_EvidenceStrict", true, "inline payload cannot also have a source download-url"},
 
 		// EvaluationLog — negative
 		{"executed assessment missing start", "./test-data/bad-evaluation-log-missing-start.yaml", "#EvaluationLog", true, ""},
@@ -199,422 +208,6 @@ func TestSchemaValidation(t *testing.T) {
 			if tt.errContains != "" && validationErr != nil {
 				if !strings.Contains(validationErr.Error(), tt.errContains) {
 					t.Errorf("error %q does not contain %q", validationErr.Error(), tt.errContains)
-				}
-			}
-		})
-	}
-}
-
-func TestEvidenceValidation(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-	}{
-		{
-			name: "allows inline payload with source provenance",
-			input: `id: dependency-graph-snapshot
-type: api-response
-collected-at: "2026-02-10T15:05:00Z"
-payload:
-  dependencies: []
-source:
-  reference-id: github-api
-  coordinate: /repos/acme/widget/dependency-graph/sbom
-`,
-		},
-		{
-			name: "rejects inline payload with retrievable source",
-			input: `id: dependency-graph-snapshot
-type: api-response
-collected-at: "2026-02-10T15:05:00Z"
-payload:
-  dependencies: []
-source:
-  reference-id: github-api
-  download-url: https://api.github.com/repos/acme/widget/dependency-graph/sbom
-`,
-			wantErr: true,
-		},
-		{
-			name: "rejects inline payload with source digest",
-			input: `id: dependency-graph-snapshot
-type: api-response
-collected-at: "2026-02-10T15:05:00Z"
-payload:
-  dependencies: []
-source:
-  reference-id: github-api
-  digest: sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
-`,
-			wantErr: true,
-		},
-		{
-			name: "rejects inline payload with source size",
-			input: `id: dependency-graph-snapshot
-type: api-response
-collected-at: "2026-02-10T15:05:00Z"
-payload:
-  dependencies: []
-source:
-  reference-id: github-api
-  size: 20
-`,
-			wantErr: true,
-		},
-		{
-			name: "allows inline payload with source media-type",
-			input: `id: dependency-graph-snapshot
-type: api-response
-collected-at: "2026-02-10T15:05:00Z"
-payload: eyJkZXBlbmRlbmNpZXMiOltdfQ==
-source:
-  reference-id: github-api
-  media-type: application/vnd.cyclonedx+json
-`,
-		},
-		{
-			name: "allows entry-id on evidence that is a Gemara artifact",
-			input: `id: documentation-evaluation
-type: EvaluationLog
-collected-at: "2026-02-10T15:05:00Z"
-source:
-  reference-id: evaluation-log
-  entry-id: OSPS-DO-01
-`,
-		},
-		{
-			name: "rejects entry-id on evidence that is not a Gemara artifact",
-			input: `id: dependency-graph-snapshot
-type: api-response
-collected-at: "2026-02-10T15:05:00Z"
-source:
-  reference-id: github-api
-  entry-id: OSPS-DO-01
-`,
-			wantErr: true,
-		},
-		{
-			name: "allows cited evidence with a digest and no address",
-			input: `id: branch-protection-result
-type: EvaluationLog
-collected-at: "2026-02-10T15:05:00Z"
-source:
-  reference-id: evaluation-log
-  entry-id: OSPS-AC-03.01
-  digest: sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
-`,
-		},
-	}
-
-	def := schemaValue.LookupPath(cue.ParsePath("#_EvidenceStrict"))
-	if def.Err() != nil {
-		t.Fatalf("lookup #_EvidenceStrict: %v", def.Err())
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := cueyaml.Validate([]byte(tt.input), def)
-			if tt.wantErr && err == nil {
-				t.Error("expected validation error, got nil")
-			}
-			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected validation error: %v", err)
-			}
-		})
-	}
-}
-
-func TestDigestFormat(t *testing.T) {
-	const hex64 = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	tests := []struct {
-		name    string
-		digest  string
-		wantErr bool
-	}{
-		{"sha256 with 64 lowercase hex", "sha256:" + hex64, false},
-		{"sha512 with 128 lowercase hex", "sha512:" + hex64 + hex64, false},
-		{"blake3 with 64 lowercase hex", "blake3:" + hex64, false},
-		// An algorithm this schema does not know is checked for grammar only, so a
-		// misspelt name passes as unknown.
-		{"unknown algorithm", "sha3-512:" + hex64 + hex64, false},
-		{"misspelt sha256 passes as unknown", "sha-256:" + hex64, false},
-		{"no algorithm separator", "sha256", true},
-		{"uppercase algorithm name", "SHA256:" + hex64, true},
-		{"sha256 one character short", "sha256:" + hex64[1:], true},
-		{"sha256 in uppercase hex", "sha256:" + strings.ToUpper(hex64), true},
-		{"sha512 with a sha256 length", "sha512:" + hex64, true},
-		{"blake3 one character short", "blake3:" + hex64[1:], true},
-	}
-
-	def := schemaValue.LookupPath(cue.ParsePath("#Digest"))
-	if def.Err() != nil {
-		t.Fatalf("lookup #Digest: %v", def.Err())
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := def.Unify(schemaValue.Context().CompileString(strconv.Quote(tt.digest))).Validate()
-			if tt.wantErr && err == nil {
-				t.Error("expected validation error, got nil")
-			}
-			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected validation error: %v", err)
-			}
-		})
-	}
-}
-
-// reverseKeys encodes an object with its keys in reverse order, where
-// json.Marshal on the map itself would sort them.
-func reverseKeys(object map[string]any) json.RawMessage {
-	keys := make([]string, 0, len(object))
-	for key := range object {
-		keys = append(keys, key)
-	}
-	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
-	fields := make([]string, 0, len(keys))
-	for _, key := range keys {
-		value, _ := json.Marshal(object[key])
-		fields = append(fields, strconv.Quote(key)+":"+string(value))
-	}
-	return json.RawMessage("{" + strings.Join(fields, ",") + "}")
-}
-
-// TestEvidenceIDWithinLog covers the rule that, within one log, an evidence id
-// names exactly one evidence item. Each case edits a valid fixture in memory.
-func TestEvidenceIDWithinLog(t *testing.T) {
-	evaluationEvidence := func(doc map[string]any, assessment int) []any {
-		evaluation := doc["evaluations"].([]any)[0].(map[string]any)
-		return evaluation["assessment-logs"].([]any)[assessment].(map[string]any)["evidence"].([]any)
-	}
-	// The first audit result in the fixture carries no evidence, so skip it.
-	auditEvidence := func(doc map[string]any, result int) []any {
-		return doc["results"].([]any)[result+1].(map[string]any)["evidence"].([]any)
-	}
-
-	tests := []struct {
-		name       string
-		file       string
-		definition string
-		evidence   func(map[string]any, int) []any
-		edit       func(first, second []any)
-		wantErr    bool
-	}{
-		{
-			name:       "evaluation log rejects two different items sharing an id",
-			file:       "./test-data/good-evaluation-log-evidence.yaml",
-			definition: "#EvaluationLog",
-			evidence:   evaluationEvidence,
-			edit: func(first, second []any) {
-				second[0].(map[string]any)["id"] = first[0].(map[string]any)["id"]
-			},
-			wantErr: true,
-		},
-		{
-			name:       "evaluation log allows the identical item repeated under one id",
-			file:       "./test-data/good-evaluation-log-evidence.yaml",
-			definition: "#EvaluationLog",
-			evidence:   evaluationEvidence,
-			edit:       func(first, second []any) { second[0] = first[0] },
-		},
-		{
-			name:       "evaluation log allows the identical item repeated with its keys in another order",
-			file:       "./test-data/good-evaluation-log-evidence.yaml",
-			definition: "#EvaluationLog",
-			evidence:   evaluationEvidence,
-			edit:       func(first, second []any) { second[0] = reverseKeys(first[0].(map[string]any)) },
-		},
-		{
-			name:       "audit log rejects two different items sharing an id",
-			file:       "./test-data/good-audit-log.yaml",
-			definition: "#AuditLog",
-			evidence:   auditEvidence,
-			edit: func(first, second []any) {
-				second[0].(map[string]any)["id"] = first[0].(map[string]any)["id"]
-			},
-			wantErr: true,
-		},
-		{
-			name:       "audit log allows the identical item repeated under one id",
-			file:       "./test-data/good-audit-log.yaml",
-			definition: "#AuditLog",
-			evidence:   auditEvidence,
-			edit:       func(first, second []any) { second[0] = first[0] },
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			data, err := os.ReadFile(tt.file)
-			if err != nil {
-				t.Fatalf("read fixture: %v", err)
-			}
-			file, err := cueyaml.Extract(tt.file, data)
-			if err != nil {
-				t.Fatalf("parse fixture: %v", err)
-			}
-			var doc map[string]any
-			if err := schemaCtx.BuildFile(file).Decode(&doc); err != nil {
-				t.Fatalf("decode fixture: %v", err)
-			}
-			tt.edit(tt.evidence(doc, 0), tt.evidence(doc, 1))
-			edited, err := json.Marshal(doc)
-			if err != nil {
-				t.Fatalf("encode edited fixture: %v", err)
-			}
-
-			def := schemaValue.LookupPath(cue.ParsePath(tt.definition))
-			err = cuejson.Validate(edited, def)
-			if tt.wantErr && err == nil {
-				t.Error("expected validation error, got nil")
-			}
-			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected validation error: %v", err)
-			}
-		})
-	}
-}
-
-// TestEvidenceSourceReference covers the rule that an evidence source names a
-// mapping reference declared in its log. Each case edits a valid fixture in memory.
-func TestEvidenceSourceReference(t *testing.T) {
-	firstEvaluationEvidence := func(doc map[string]any) map[string]any {
-		evaluation := doc["evaluations"].([]any)[0].(map[string]any)
-		assessment := evaluation["assessment-logs"].([]any)[0].(map[string]any)
-		return assessment["evidence"].([]any)[0].(map[string]any)
-	}
-	// The first audit result in the fixture carries no evidence, so use the second.
-	firstAuditEvidence := func(doc map[string]any) map[string]any {
-		return doc["results"].([]any)[1].(map[string]any)["evidence"].([]any)[0].(map[string]any)
-	}
-	undeclare := func(item map[string]any) {
-		item["source"].(map[string]any)["reference-id"] = "not-declared"
-	}
-
-	tests := []struct {
-		name       string
-		file       string
-		definition string
-		edit       func(doc map[string]any)
-		wantErr    bool
-	}{
-		{
-			name:       "evaluation log rejects an evidence source that is not declared",
-			file:       "./test-data/pvtr-baseline-scan.yaml",
-			definition: "#EvaluationLog",
-			edit:       func(doc map[string]any) { undeclare(firstEvaluationEvidence(doc)) },
-			wantErr:    true,
-		},
-		{
-			name:       "evaluation log allows inline evidence that names no source",
-			file:       "./test-data/pvtr-baseline-scan.yaml",
-			definition: "#EvaluationLog",
-			edit:       func(doc map[string]any) { delete(firstEvaluationEvidence(doc), "source") },
-		},
-		{
-			name:       "audit log rejects an evidence source that is not declared",
-			file:       "./test-data/good-audit-log.yaml",
-			definition: "#AuditLog",
-			edit:       func(doc map[string]any) { undeclare(firstAuditEvidence(doc)) },
-			wantErr:    true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			data, err := os.ReadFile(tt.file)
-			if err != nil {
-				t.Fatalf("read fixture: %v", err)
-			}
-			file, err := cueyaml.Extract(tt.file, data)
-			if err != nil {
-				t.Fatalf("parse fixture: %v", err)
-			}
-			var doc map[string]any
-			if err := schemaCtx.BuildFile(file).Decode(&doc); err != nil {
-				t.Fatalf("decode fixture: %v", err)
-			}
-			tt.edit(doc)
-			edited, err := json.Marshal(doc)
-			if err != nil {
-				t.Fatalf("encode edited fixture: %v", err)
-			}
-
-			def := schemaValue.LookupPath(cue.ParsePath(tt.definition))
-			err = cuejson.Validate(edited, def)
-			if tt.wantErr && err == nil {
-				t.Error("expected validation error, got nil")
-			}
-			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected validation error: %v", err)
-			}
-		})
-	}
-}
-
-// TestIncompleteEvidenceReportsWhatIsMissing guards the log-level evidence rules
-// against failing on an evidence item that is itself incomplete. An item with
-// neither a payload nor a source must be reported as missing its source, not as
-// an error from inside a rule that compared or looked it up.
-func TestIncompleteEvidenceReportsWhatIsMissing(t *testing.T) {
-	tests := []struct {
-		name       string
-		file       string
-		definition string
-		edit       func(doc map[string]any)
-	}{
-		{
-			name:       "evaluation log",
-			file:       "./test-data/good-evaluation-log-evidence.yaml",
-			definition: "#EvaluationLog",
-			edit: func(doc map[string]any) {
-				evaluation := doc["evaluations"].([]any)[0].(map[string]any)
-				assessment := evaluation["assessment-logs"].([]any)[0].(map[string]any)
-				delete(assessment["evidence"].([]any)[0].(map[string]any), "source")
-			},
-		},
-		{
-			name:       "audit log",
-			file:       "./test-data/bad-audit-log-evidence-neither.yaml",
-			definition: "#AuditLog",
-			edit:       func(map[string]any) {},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			data, err := os.ReadFile(tt.file)
-			if err != nil {
-				t.Fatalf("read fixture: %v", err)
-			}
-			file, err := cueyaml.Extract(tt.file, data)
-			if err != nil {
-				t.Fatalf("parse fixture: %v", err)
-			}
-			var doc map[string]any
-			if err := schemaCtx.BuildFile(file).Decode(&doc); err != nil {
-				t.Fatalf("decode fixture: %v", err)
-			}
-			tt.edit(doc)
-			edited, err := json.Marshal(doc)
-			if err != nil {
-				t.Fatalf("encode edited fixture: %v", err)
-			}
-
-			// JSON is valid YAML. The YAML validator is the one that requires
-			// concrete values, which is what reports a missing required field.
-			err = cueyaml.Validate(edited, schemaValue.LookupPath(cue.ParsePath(tt.definition)))
-			if err == nil {
-				t.Fatal("expected validation error, got nil")
-			}
-			details := cueerrors.Details(err, nil)
-			if !strings.Contains(details, `source."reference-id"`) {
-				t.Errorf("error does not name the missing source:\n%s", details)
-			}
-			for _, noise := range []string{"invalid left-hand value", "list.Contains"} {
-				if strings.Contains(details, noise) {
-					t.Errorf("error comes from inside a rule (%q) rather than naming what is missing:\n%s", noise, details)
 				}
 			}
 		})

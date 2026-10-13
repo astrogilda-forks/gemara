@@ -4,6 +4,8 @@
 @gemara(status="stable")
 package gemara
 
+import "list"
+
 @go(gemara)
 
 // EvaluationLog contains the results of evaluating a set of Layer 2 controls.
@@ -14,19 +16,45 @@ package gemara
 	result: #Result
 	evaluations: [#ControlEvaluation, ...#ControlEvaluation] @go(Evaluations,type=[]*ControlEvaluation)
 
-	// Evidence held elsewhere that omits digest relies on its source url to fix the
-	// bytes, which an oci url does only when pinned by digest (see #EvidenceMapping.digest).
-	if evaluations != _|_ && metadata."mapping-references" != _|_ {
-		_ociURLs: {for m in metadata."mapping-references" if m.url != _|_ if m.url =~ "^oci://" {(m.id): m.url}}
-		for e in evaluations
-		for a in e."assessment-logs"
-		if a.evidence != _|_
-		for item in a.evidence
-		if item.payload == _|_ && item.source != _|_ && item.source.digest == _|_
-		if _ociURLs[item.source."reference-id"] != _|_
-		if (_ociURLs[item.source."reference-id"] & _contentAddressedOCI) == _|_ {
-			_digestBasis: (item.id): error("evidence \(item.id) omits digest and its source \(item.source."reference-id") is an oci url not pinned by digest: pin the url as oci://<name>@<algorithm>:<encoded> or give digest")
+	// Within one evidence list an id appears once: listing an item twice in the
+	// same place says nothing.
+	for i, evaluation in evaluations
+	for j, assessment in evaluation."assessment-logs"
+	if assessment.evidence != _|_ {
+		_uniqueEvidenceIDsInList: "\(i).\(j)": {for k, item in assessment.evidence {(item.id): k}}
+	}
+
+	// Across the log an evidence id names exactly one evidence item. The same
+	// item may appear under its id in another assessment's evidence, which is how
+	// one artifact supports several results; two different items may not share
+	// an id.
+	_evidenceByID: {
+		for i, evaluation in evaluations
+		for j, assessment in evaluation."assessment-logs"
+		if assessment.evidence != _|_
+		for k, item in assessment.evidence {
+			(item.id): "\(i).\(j).\(k)": item
 		}
+	}
+	for id, occurrences in _evidenceByID
+	for p, first in occurrences
+	for q, second in occurrences
+	if p < q
+	if first != second {
+		_evidenceIDReuse: (id): error("evidence id \(id) names two different evidence items in this log")
+	}
+
+	// An evidence source names where the evidence came from, so its reference-id
+	// must be a mapping reference declared in this log's metadata. The check is an
+	// assignment rather than a condition, because an assignment tolerates an
+	// item that is incomplete and a condition fails on one, hiding what is missing.
+	_declaredReferenceIDs: [if metadata."mapping-references" != _|_ for r in metadata."mapping-references" {r.id}]
+	for evaluation in evaluations
+	for assessment in evaluation."assessment-logs"
+	if assessment.evidence != _|_
+	for item in assessment.evidence
+	if item.source != _|_ {
+		_evidenceSourceDeclared: "evidence \(item.id) names a source that is not declared in metadata.mapping-references": true & list.Contains(_declaredReferenceIDs, item.source."reference-id")
 	}
 }
 

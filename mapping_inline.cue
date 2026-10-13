@@ -5,7 +5,18 @@
 
 package gemara
 
-// MappingReference represents a reference to an external document with full metadata.
+// Fields constrained by #URL and #Digest (evidence.cue) pin their Go projection to string. A named
+// Go type here buys no validation — Go has no constructor to enforce the pattern —
+// and would cost every consumer a conversion at every use site. The constraint is
+// the value of the definition; the Go name is not.
+
+// URL is a URI with a scheme. Any scheme is accepted (e.g. https, file, oci, s3,
+// arn), so content hosted outside http(s) can be addressed.
+#URL: =~"^[a-zA-Z][a-zA-Z0-9+.-]*:[^\\s]+$" @go(-)
+
+// MappingReference is a reusable back-matter entry describing an external source or
+// authority. It provides source identity and may provide a location, but does not
+// itself represent a retrieved representation.
 #MappingReference: {
 	// id identifies this mapping reference within the artifact and, when url
 	// is absent, the referenced artifact's metadata.id.
@@ -20,7 +31,8 @@ package gemara
 	// description is prose regarding the artifact's purpose or content
 	description?: string
 
-	// url is the path where the artifact may be retrieved; preferably responds with Gemara-compatible YAML/JSON.
+	// url is an optional location from which a representation of the referenced source
+	// may be retrieved; preferably responds with Gemara-compatible YAML/JSON.
 	// Any URI scheme is accepted (e.g. https, file, oci, s3, arn) so evidence can be
 	// addressed wherever it actually lives.
 	url?: =~"^[a-zA-Z][a-zA-Z0-9+.-]*:[^\\s]+$"
@@ -55,40 +67,3 @@ package gemara
 	// remarks is prose describing the mapping relationship
 	remarks?: string
 }
-
-// EvidenceMapping identifies the source from which evidence was collected.
-// reference-id names the MappingReference; coordinate or entry-id gives
-// specificity within it; digest pins the resolved evidence content at collection
-// time, not the resource identity named by the MappingReference url.
-#EvidenceMapping: {
-	// reference-id ties this evidence to a mapping-reference in the artifact's metadata
-	"reference-id": string @go(ReferenceId)
-
-	// coordinate is the precise location within the stream identified by reference-id
-	// (e.g. an API path, file path, or JSON path expression). May be combined with
-	// entry-id to identify a sub-location within that entry's output.
-	coordinate?: string
-
-	// entry-id identifies a specific entry within a referenced Gemara artifact.
-	// May be combined with coordinate to identify a sub-location within that entry's output.
-	"entry-id"?: string @go(EntryId)
-
-	// digest is a cryptographic hash of the resolved evidence content at collection time,
-	// never of the resource identity named by the MappingReference url; format:
-	// algorithm:encoded (e.g. sha256:abc123...). It may be omitted when the url is
-	// content-addressed and resolves to exactly the evidence bytes, which here means one
-	// thing: an oci url pinned by digest (oci://<name>@<algorithm>:<encoded>). A tag-only
-	// oci url names whatever the tag points at when it is read, so evidence that cites one
-	// without a payload must carry digest, and the AuditLog and EvaluationLog schemas
-	// reject it otherwise.
-	// For any other url an absent digest makes no integrity claim.
-	digest?: =~"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$"
-
-	// remarks is prose regarding this evidence reference
-	remarks?: string
-}
-
-// _contentAddressedOCI matches an oci url pinned by digest, the one locator form
-// treated as content-addressed when an evidence source omits digest. The digest
-// grammar is the one the digest field uses.
-_contentAddressedOCI: =~"^oci://[^\\s@]+@[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$"

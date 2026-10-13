@@ -46,6 +46,12 @@ adherence:
       authority:
         reference-id: records-manual
         entry-id: "4.2"
+    - id: support-period-end
+      title: "Support period ended"
+      description: "End of the support period determined for the product. Determined from product lifecycle records."
+      authority:
+        reference-id: records-manual
+        entry-id: "4.3"
   retention-obligations:
     - id: RET-AUDIT-7Y
       kind: minimum
@@ -71,3 +77,9 @@ adherence:
         entry-id: "6.1"
       anchor: matter-closed
       duration: P3Y
+    - id: RET-SUPPORT-PERIOD
+      kind: minimum
+      authority:
+        reference-id: records-manual
+        entry-id: "6.2"
+      anchor: support-period-end

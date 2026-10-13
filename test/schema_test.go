@@ -88,6 +88,7 @@ func TestSchemaValidation(t *testing.T) {
 		{"retention obligation measured from an undeclared anchor", "./test-data/bad-policy-retention-undeclared-anchor.yaml", "#Policy", true, `does not satisfy list.Contains("employee-separation")`},
 		{"retention duration below day precision", "./test-data/bad-policy-retention-subday-duration.yaml", "#Policy", true, `invalid value "PT1H"`},
 		{"retention duration with no components", "./test-data/bad-policy-retention-empty-duration.yaml", "#Policy", true, `invalid value "P"`},
+		{"retention obligation measured from collected-at with no duration", "./test-data/bad-policy-retention-collected-at-without-duration.yaml", "#Policy", true, "retention obligation RET-PII-MAX is measured from collected-at and must state a duration"},
 		{"duplicate retention obligation id", "./test-data/bad-policy-retention-duplicate-obligation-id.yaml", "#Policy", true, `_uniqueRetentionObligationIds."RET-AUDIT-7Y"`},
 		{"duplicate retention anchor id", "./test-data/bad-policy-retention-duplicate-anchor-id.yaml", "#Policy", true, `_uniqueRetentionAnchorIds."matter-closed"`},
 		{"retention anchor redeclaring collected-at", "./test-data/bad-policy-retention-redeclared-collected-at.yaml", "#Policy", true, `_uniqueRetentionAnchorIds."collected-at"`},

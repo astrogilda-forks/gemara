@@ -126,6 +126,12 @@ import "list"
 		// Unify the valid anchor list with a list.Contains constraint to require each obligation to measure from collected-at or a declared anchor
 		for i, o in RO {
 			_anchorValidation: "\(i)": _validAnchorIds & list.Contains(o.anchor)
+
+			// An obligation measured from collected-at must state its period; only a declared
+			// anchor may stand without one, meaning the obligation runs to the anchor itself
+			if o.anchor == #CollectedAtAnchor if o.duration == _|_ {
+				_collectedAtWithoutDuration: "\(o.id)": error("retention obligation \(o.id) is measured from collected-at and must state a duration")
+			}
 		}
 	}
 }
@@ -206,10 +212,11 @@ import "list"
 // ModType defines the type of modification to the assessment requirement.
 #ModType: "Add" | "Modify" | "Remove" | "Replace" | "Override" @go(-)
 
-// Duration is an ISO 8601 duration limited to date components (e.g. P7Y, P18M, P1Y2M3W4D).
-// Records schedules do not express retention below day precision, so a sub-day period
-// such as PT1H is rejected: a freshness window must not typecheck as a retention period.
-#Duration: =~"^P(?:\\d+Y(?:\\d+M)?(?:\\d+W)?(?:\\d+D)?|\\d+M(?:\\d+W)?(?:\\d+D)?|\\d+W(?:\\d+D)?|\\d+D)$" @go(Duration)
+// RetentionDuration is a records-retention period: an ISO 8601 duration limited to date
+// components (e.g. P7Y, P18M, P1Y2M3W4D). Records schedules do not express retention below
+// day precision, so a sub-day period such as PT1H is rejected. Because of that it is not a
+// general-purpose duration, and frequency or freshness windows need a type of their own.
+#RetentionDuration: =~"^P(?:\\d+Y(?:\\d+M)?(?:\\d+W)?(?:\\d+D)?|\\d+M(?:\\d+W)?(?:\\d+D)?|\\d+W(?:\\d+D)?|\\d+D)$" @go(RetentionDuration)
 
 // CollectedAtAnchor is the retention anchor Gemara resolves from the evidence itself,
 // so it is understood without a declaration and a policy may not redeclare it.
@@ -253,8 +260,10 @@ import "list"
 	// citation's effective instant being authoritative.
 	anchor: #CollectedAtAnchor | string
 
-	// duration is the period measured from the anchor
-	duration: #Duration
+	// duration is the period measured from the anchor. Omit it when the obligation runs to
+	// the anchor itself, such as keeping records until a support period ends; a zero period
+	// is not used for that. An obligation measured from collected-at always states a duration.
+	duration?: #RetentionDuration
 
 	// applies-to optionally narrows this obligation to specific assessment requirements
 	"applies-to"?: [string, ...string] @go(AppliesTo)

@@ -785,11 +785,6 @@ components:
       - Clear
       type: string
       x-status: experimental
-    Duration:
-      description: "Duration is an ISO 8601 duration limited to date components (e.g. P7Y, P18M, P1Y2M3W4D).\nRecords schedules do not express retention below day precision, so a sub-day period\nsuch as PT1H is rejected: a freshness window must not typecheck as a retention period."
-      pattern: "^P(?:\\d+Y(?:\\d+M)?(?:\\d+W)?(?:\\d+D)?|\\d+M(?:\\d+W)?(?:\\d+D)?|\\d+W(?:\\d+D)?|\\d+D)$"
-      type: string
-      x-status: experimental
     Email:
       description: Email represents a validated email address pattern
       pattern: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
@@ -1896,6 +1891,11 @@ components:
       - description
       type: object
       x-status: experimental
+    RetentionDuration:
+      description: "RetentionDuration is a records-retention period: an ISO 8601 duration limited to date\ncomponents (e.g. P7Y, P18M, P1Y2M3W4D). Records schedules do not express retention below\nday precision, so a sub-day period such as PT1H is rejected. Because of that it is not a\ngeneral-purpose duration, and frequency or freshness windows need a type of their own."
+      pattern: "^P(?:\\d+Y(?:\\d+M)?(?:\\d+W)?(?:\\d+D)?|\\d+M(?:\\d+W)?(?:\\d+D)?|\\d+W(?:\\d+D)?|\\d+D)$"
+      type: string
+      x-status: experimental
     RetentionKind:
       description: RetentionKind states whether an obligation sets a floor or a ceiling.
       enum:
@@ -1931,8 +1931,11 @@ components:
           description: authority cites the entry in the external schedule imposing this obligation
         duration:
           allOf:
-          - $ref: "#/components/schemas/Duration"
-          description: duration is the period measured from the anchor
+          - $ref: "#/components/schemas/RetentionDuration"
+          description: |-
+            duration is the period measured from the anchor. Omit it when the obligation runs to
+            the anchor itself, such as keeping records until a support period ends; a zero period
+            is not used for that. An obligation measured from collected-at always states a duration.
         id:
           description: id allows evidence citations to reference this obligation
           type: string
@@ -1945,7 +1948,6 @@ components:
       - kind
       - authority
       - anchor
-      - duration
       type: object
       x-status: experimental
     RetentionObligationRef:

@@ -36,9 +36,10 @@ package gemara
 	// contact is contact information for the actor
 	contact?: #Contact @go(Contact)
 
-	// execution-environment describes where this actor runs. On an accepted method's
-	// executor it states the environment a policy accepts that executor's results from;
-	// on a log's author it records the environment the log was produced in.
+	// execution-environment describes where this actor runs. When the actor is the
+	// executor a Policy names on an AcceptedMethod, it states the environment the
+	// policy accepts that method's results from; when the actor is a log's author, it
+	// records the environment the log was produced in.
 	"execution-environment"?: #ExecutionEnvironment @go(ExecutionEnvironment,optional=nillable)
 }
 

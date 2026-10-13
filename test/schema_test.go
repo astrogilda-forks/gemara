@@ -123,6 +123,7 @@ func TestSchemaValidation(t *testing.T) {
 		// AuditLog — positive
 		{"valid audit log", "./test-data/good-audit-log.yaml", "#AuditLog", false, ""},
 		{"audit log evidence mapping with both coordinate and entry-id", "./test-data/good-audit-log-coordinate-and-entry-id.yaml", "#AuditLog", false, ""},
+		{"audit log evidence without digest from an oci url pinned by digest", "./test-data/good-audit-log-oci-digest-pinned-no-digest.yaml", "#AuditLog", false, ""},
 
 		// AuditLog — negative
 		{"audit log missing summary criteria and results", "./test-data/bad-audit-log.yaml", "#AuditLog", true, ""},
@@ -132,6 +133,7 @@ func TestSchemaValidation(t *testing.T) {
 		{"audit log mapping reference url with no scheme", "./test-data/bad-audit-log-url-no-scheme.yaml", "#AuditLog", true, ""},
 		{"audit log mapping reference url with a non-alphabetic scheme", "./test-data/bad-audit-log-url-invalid-scheme.yaml", "#AuditLog", true, ""},
 		{"audit log target uri with no scheme", "./test-data/bad-audit-log-uri-no-scheme.yaml", "#AuditLog", true, ""},
+		{"audit log evidence without digest from a tag-only oci url", "./test-data/bad-audit-log-tag-only-oci-no-digest.yaml", "#AuditLog", true, "is an oci url not pinned by digest"},
 
 		// CapabilityCatalog — negative
 		{"capability with invalid group", "./test-data/bad-capability-invalid-group.yaml", "#CapabilityCatalog", true, ""},

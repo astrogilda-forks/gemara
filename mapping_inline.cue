@@ -58,7 +58,8 @@ package gemara
 
 // EvidenceMapping identifies the source from which evidence was collected.
 // reference-id names the MappingReference; coordinate or entry-id gives
-// specificity within it; digest pins the observed content at collection time.
+// specificity within it; digest pins the resolved evidence content at collection
+// time, not the resource identity named by the MappingReference url.
 #EvidenceMapping: {
 	// reference-id ties this evidence to a mapping-reference in the artifact's metadata
 	"reference-id": string @go(ReferenceId)
@@ -72,9 +73,21 @@ package gemara
 	// May be combined with coordinate to identify a sub-location within that entry's output.
 	"entry-id"?: string @go(EntryId)
 
-	// digest is a cryptographic hash of the observed content at collection time; format: algorithm:encoded (e.g. sha256:abc123...)
+	// digest is a cryptographic hash of the resolved evidence content at collection time,
+	// never of the resource identity named by the MappingReference url; format:
+	// algorithm:encoded (e.g. sha256:abc123...). It may be omitted when the url is
+	// content-addressed and resolves to exactly the evidence bytes, which here means one
+	// thing: an oci url pinned by digest (oci://<name>@<algorithm>:<encoded>). A tag-only
+	// oci url names whatever the tag points at when it is read, so evidence that cites one
+	// without a payload must carry digest, and the AuditLog schema rejects it otherwise.
+	// For any other url an absent digest makes no integrity claim.
 	digest?: =~"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$"
 
 	// remarks is prose regarding this evidence reference
 	remarks?: string
 }
+
+// _contentAddressedOCI matches an oci url pinned by digest, the one locator form
+// treated as content-addressed when an evidence source omits digest. The digest
+// grammar is the one the digest field uses.
+_contentAddressedOCI: =~"^oci://[^\\s@]+@[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$"

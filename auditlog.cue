@@ -71,6 +71,13 @@ import "list"
 		if item.source != _|_ {
 			_evidenceSourceDeclared: "evidence \(item.id) names a source that is not declared in metadata.mapping-references": true & list.Contains(_declaredReferenceIDs, item.source."reference-id")
 		}
+
+		// Evidence that omits digest must be located by a url that fixes its bytes
+		// (see EvidenceMapping.digest).
+		_ociDigestCheck: _ociDigestRule & {
+			references: [if metadata."mapping-references" != _|_ for r in metadata."mapping-references" {r}]
+			evidence: [for e in _evidenceByID for item in e {item}]
+		}
 	}
 }
 

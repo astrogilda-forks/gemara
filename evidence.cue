@@ -108,9 +108,17 @@ package gemara
 	// representation-scoped integrity claim: it says what the content was when
 	// cited, not what the source holds now. It covers the full octet stream as
 	// delivered — never a canonical re-serialization, and never a sub-resource
-	// selected by coordinate or entry-id. Absence means no integrity claim was made,
-	// not that the content is known unchanged, and a digest that could not be
-	// checked says no more than an absent one.
+	// selected by coordinate or entry-id. It hashes the content the locator
+	// resolved to, never the resource identity a url names. Absence means no
+	// integrity claim was made, not that the content is known unchanged, and a
+	// digest that could not be checked says no more than an absent one.
+	//
+	// digest may be left out when the locator of the content (download-url, else
+	// the MappingReference's url) is content-addressed, which here means an oci url
+	// pinned by digest (oci://<name>@<algorithm>:<encoded>). A tag-only oci url
+	// names whatever the tag points at when it is read, so evidence located by one
+	// must carry digest. The CUE AuditLog and EvaluationLog schemas reject it
+	// otherwise; the JSON Schema and OpenAPI projections do not check this rule.
 	digest?: #Digest @go(Digest,type=string)
 
 	// size is the length, in bytes, of that octet stream.
@@ -130,7 +138,8 @@ package gemara
 // #_EvidenceStrict carries the rules one evidence item can check about itself. It
 // is hidden (@go(-), and never projected), so the structures above stay shape and
 // documentation only. Rules across a log's evidence (one id per item, declared
-// sources) live on #EvaluationLog and #AuditLog.
+// sources) live on #EvaluationLog and #AuditLog. _ociDigestRule, below, is the
+// one digest rule that needs the log's mapping references; both logs apply it.
 
 // _EvidenceStrict layers the "at least one of payload or source" rule on top of #Evidence
 #_EvidenceStrict: {
@@ -171,3 +180,41 @@ package gemara
 #Digest: (=~"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$" &
 	(=~"^(?:sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$" |
 	!~"^(?:sha256|sha512|blake3):")) @go(-)
+
+// _ociDigestRule is the rule stated on digest: evidence held elsewhere that
+// omits digest must be located by a url that fixes its bytes. It is written once,
+// here, and #EvaluationLog and #AuditLog each apply it to their evidence and
+// mapping references, because the locator can be a MappingReference url and only
+// the log's metadata holds those. It is a hidden field rather than a definition
+// so that it never reaches the OpenAPI projection, which cannot express it. The
+// oci scheme is matched in any case, as URI schemes are case-insensitive.
+_ociDigestRule: {
+	references: [...#MappingReference]
+	evidence: [...#Evidence]
+
+	_urls: {for r in references if r.url != _|_ {(r.id): r.url}}
+
+	// The locator of each item held elsewhere that omits digest: download-url
+	// when given, otherwise the url of the MappingReference it names.
+	_locators: {
+		for item in evidence
+		if item.payload == _|_ && item.source != _|_ && item.source.digest == _|_ {
+			if item.source."download-url" != _|_ {
+				(item.id): item.source."download-url"
+			}
+			if item.source."download-url" == _|_ && _urls[item.source."reference-id"] != _|_ {
+				(item.id): _urls[item.source."reference-id"]
+			}
+		}
+	}
+
+	for id, l in _locators
+	if l =~ "^(?i:oci)://"
+	if (l & _contentAddressedOCI) == _|_ {
+		_digestBasis: (id): error("evidence \(id) omits digest and is located by an oci url not pinned by digest (\(l)): pin it as oci://<name>@<algorithm>:<encoded> or give digest")
+	}
+}
+
+// _contentAddressedOCI matches an oci url pinned by digest, the one locator form
+// treated as content-addressed when evidence omits digest.
+_contentAddressedOCI: =~"^(?i:oci)://[^\\s@]+@[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$"

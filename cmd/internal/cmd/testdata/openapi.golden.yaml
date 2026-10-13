@@ -1003,7 +1003,7 @@ components:
         digest:
           allOf:
           - $ref: "#/components/schemas/Digest"
-          description: "digest is a cryptographic hash of the evidence content, as a\nrepresentation-scoped integrity claim: it says what the content was when\ncited, not what the source holds now. It covers the full octet stream as\ndelivered — never a canonical re-serialization, and never a sub-resource\nselected by coordinate or entry-id. Absence means no integrity claim was made,\nnot that the content is known unchanged, and a digest that could not be\nchecked says no more than an absent one."
+          description: "digest is a cryptographic hash of the evidence content, as a\nrepresentation-scoped integrity claim: it says what the content was when\ncited, not what the source holds now. It covers the full octet stream as\ndelivered — never a canonical re-serialization, and never a sub-resource\nselected by coordinate or entry-id. It hashes the content the locator\nresolved to, never the resource identity a url names. Absence means no\nintegrity claim was made, not that the content is known unchanged, and a\ndigest that could not be checked says no more than an absent one.\n\ndigest may be left out when the locator of the content (download-url, else\nthe MappingReference's url) is content-addressed, which here means an oci url\npinned by digest (oci://<name>@<algorithm>:<encoded>). A tag-only oci url\nnames whatever the tag points at when it is read, so evidence located by one\nmust carry digest. The CUE AuditLog and EvaluationLog schemas reject it\notherwise; the JSON Schema and OpenAPI projections do not check this rule."
         download-url:
           allOf:
           - $ref: "#/components/schemas/URL"

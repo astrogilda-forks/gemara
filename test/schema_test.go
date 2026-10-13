@@ -108,9 +108,11 @@ func TestSchemaValidation(t *testing.T) {
 		// EvaluationLog — positive
 		{"valid PVTR baseline scan", "./test-data/pvtr-baseline-scan.yaml", "#EvaluationLog", false, ""},
 		{"assessments that never ran omit start", "./test-data/good-evaluation-log-unstarted.yaml", "#EvaluationLog", false, ""},
+		{"evaluation log evidence without digest from an oci url pinned by digest", "./test-data/good-evaluation-log-oci-digest-pinned-no-digest.yaml", "#EvaluationLog", false, ""},
 
 		// EvaluationLog — negative
 		{"executed assessment missing start", "./test-data/bad-evaluation-log-missing-start.yaml", "#EvaluationLog", true, ""},
+		{"evaluation log evidence without digest from a tag-only oci url", "./test-data/bad-evaluation-log-tag-only-oci-no-digest.yaml", "#EvaluationLog", true, "is an oci url not pinned by digest"},
 
 		// EnforcementLog — positive
 		{"valid enforcement log", "./test-data/good-enforcement-log.yaml", "#EnforcementLog", false, ""},

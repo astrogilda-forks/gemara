@@ -79,7 +79,8 @@ package gemara
 	// content-addressed and resolves to exactly the evidence bytes, which here means one
 	// thing: an oci url pinned by digest (oci://<name>@<algorithm>:<encoded>). A tag-only
 	// oci url names whatever the tag points at when it is read, so evidence that cites one
-	// without a payload must carry digest, and the AuditLog schema rejects it otherwise.
+	// without a payload must carry digest, and the AuditLog and EvaluationLog schemas
+	// reject it otherwise.
 	// For any other url an absent digest makes no integrity claim.
 	digest?: =~"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$"
 

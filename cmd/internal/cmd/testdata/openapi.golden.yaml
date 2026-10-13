@@ -970,7 +970,7 @@ components:
             entry-id to identify a sub-location within that entry's output.
           type: string
         digest:
-          description: "digest is a cryptographic hash of the resolved evidence content at collection time,\nnever of the resource identity named by the MappingReference url; format:\nalgorithm:encoded (e.g. sha256:abc123...). It may be omitted when the url is\ncontent-addressed and resolves to exactly the evidence bytes, which here means one\nthing: an oci url pinned by digest (oci://<name>@<algorithm>:<encoded>). A tag-only\noci url names whatever the tag points at when it is read, so evidence that cites one\nwithout a payload must carry digest, and the AuditLog schema rejects it otherwise.\nFor any other url an absent digest makes no integrity claim."
+          description: "digest is a cryptographic hash of the resolved evidence content at collection time,\nnever of the resource identity named by the MappingReference url; format:\nalgorithm:encoded (e.g. sha256:abc123...). It may be omitted when the url is\ncontent-addressed and resolves to exactly the evidence bytes, which here means one\nthing: an oci url pinned by digest (oci://<name>@<algorithm>:<encoded>). A tag-only\noci url names whatever the tag points at when it is read, so evidence that cites one\nwithout a payload must carry digest, and the AuditLog and EvaluationLog schemas\nreject it otherwise.\nFor any other url an absent digest makes no integrity claim."
           pattern: ^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$
           type: string
         entry-id:

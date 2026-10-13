@@ -13,6 +13,21 @@ package gemara
 	// result is the aggregate outcome across all evaluations in this log
 	result: #Result
 	evaluations: [#ControlEvaluation, ...#ControlEvaluation] @go(Evaluations,type=[]*ControlEvaluation)
+
+	// Evidence held elsewhere that omits digest relies on its source url to fix the
+	// bytes, which an oci url does only when pinned by digest (see #EvidenceMapping.digest).
+	if evaluations != _|_ && metadata."mapping-references" != _|_ {
+		_ociURLs: {for m in metadata."mapping-references" if m.url != _|_ if m.url =~ "^oci://" {(m.id): m.url}}
+		for e in evaluations
+		for a in e."assessment-logs"
+		if a.evidence != _|_
+		for item in a.evidence
+		if item.payload == _|_ && item.source != _|_ && item.source.digest == _|_
+		if _ociURLs[item.source."reference-id"] != _|_
+		if (_ociURLs[item.source."reference-id"] & _contentAddressedOCI) == _|_ {
+			_digestBasis: (item.id): error("evidence \(item.id) omits digest and its source \(item.source."reference-id") is an oci url not pinned by digest: pin the url as oci://<name>@<algorithm>:<encoded> or give digest")
+		}
+	}
 }
 
 // ControlEvaluation contains the results of evaluating a single Layer 5 control.

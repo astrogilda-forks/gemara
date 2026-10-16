@@ -30,7 +30,7 @@ package gemara
 			for j, a in e."assessment-logs" {
 				let _plan = [if a.plan != _|_ {a.plan."entry-id"}, "-"][0]
 				let _method = [if a["execution-context"] != _|_ if a["execution-context"]["method-id"] != _|_ {a["execution-context"]."method-id"}, "-"][0]
-				"\(a.requirement."entry-id")/\(_plan)/\(_method)": j
+				"\(a.requirement."entry-id")": "\(_plan)": "\(_method)": j
 			}
 		}
 	}
@@ -75,7 +75,7 @@ package gemara
 	// method-id names the accepted method this assessment executed, where the policy
 	// prescribed one: a method of the cited plan, or one of the policy's own
 	// evaluation-methods, which are the fallback where no plan is bound.
-	"method-id"?: string @go(MethodId)
+	"method-id"?: string & !="" @go(MethodId)
 }
 
 // AssessmentLog contains the results of executing a single assessment procedure for a control requirement.

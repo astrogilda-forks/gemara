@@ -235,8 +235,8 @@ import "list"
 	// description explains when the event occurs and who determines it
 	description: string
 
-	// authority cites the schedule or record that defines the event
-	authority?: #EntryMapping @go(Authority,optional=nillable)
+	// defined-by cites the schedule or record that defines the event
+	"defined-by"?: #EntryMapping @go(DefinedBy,optional=nillable)
 }
 
 // RetentionKind states whether an obligation sets a floor or a ceiling.
@@ -251,8 +251,9 @@ import "list"
 	// kind states whether this obligation sets a floor or a ceiling
 	kind: #RetentionKind
 
-	// authority cites the entry in the external schedule imposing this obligation
-	authority: #EntryMapping
+	// implements cites the entry in the external schedule that this obligation puts into
+	// effect, in the sense the implements relationship has in a mapping document
+	implements: #EntryMapping
 
 	// anchor names the event from which duration is measured. collected-at is
 	// resolved by Gemara from the evidence itself; any other value must match a

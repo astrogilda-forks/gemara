@@ -43,13 +43,13 @@ adherence:
     - id: matter-closed
       title: "Legal matter closed"
       description: "Date counsel formally closes the matter. Determined by Legal; not derivable from any Gemara artifact."
-      authority:
+      defined-by:
         reference-id: records-manual
         entry-id: "4.2"
   retention-obligations:
     - id: RET-AUDIT-7Y
       kind: minimum
-      authority:
+      implements:
         reference-id: sox-802
         entry-id: "a"
       anchor: collected-at
@@ -59,14 +59,14 @@ adherence:
         - OSPS-AC-02
     - id: RET-PII-MAX
       kind: maximum
-      authority:
+      implements:
         reference-id: gdpr
         entry-id: "art-5-1-e"
       anchor: collected-at
       duration: P1Y
     - id: RET-LIT-3Y
       kind: minimum
-      authority:
+      implements:
         reference-id: records-manual
         entry-id: "6.1"
       anchor: employee-separation

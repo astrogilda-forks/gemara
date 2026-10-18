@@ -1872,10 +1872,10 @@ components:
         Policies declare the anchors they use rather than drawing on a fixed vocabulary,
         because records schedules anchor to events Gemara cannot enumerate.
       properties:
-        authority:
+        defined-by:
           allOf:
           - $ref: "#/components/schemas/EntryMapping"
-          description: authority cites the schedule or record that defines the event
+          description: defined-by cites the schedule or record that defines the event
         description:
           description: description explains when the event occurs and who determines it
           type: string
@@ -1925,10 +1925,6 @@ components:
             type: string
           minItems: 1
           type: array
-        authority:
-          allOf:
-          - $ref: "#/components/schemas/EntryMapping"
-          description: authority cites the entry in the external schedule imposing this obligation
         duration:
           allOf:
           - $ref: "#/components/schemas/RetentionDuration"
@@ -1939,6 +1935,12 @@ components:
         id:
           description: id allows evidence citations to reference this obligation
           type: string
+        implements:
+          allOf:
+          - $ref: "#/components/schemas/EntryMapping"
+          description: |-
+            implements cites the entry in the external schedule that this obligation puts into
+            effect, in the sense the implements relationship has in a mapping document
         kind:
           allOf:
           - $ref: "#/components/schemas/RetentionKind"
@@ -1946,7 +1948,7 @@ components:
       required:
       - id
       - kind
-      - authority
+      - implements
       - anchor
       type: object
       x-status: experimental

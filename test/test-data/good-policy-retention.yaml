@@ -43,19 +43,19 @@ adherence:
     - id: matter-closed
       title: "Legal matter closed"
       description: "Date counsel formally closes the matter. Determined by Legal; not derivable from any Gemara artifact."
-      authority:
+      defined-by:
         reference-id: records-manual
         entry-id: "4.2"
     - id: support-period-end
       title: "Support period ended"
       description: "End of the support period determined for the product. Determined from product lifecycle records."
-      authority:
+      defined-by:
         reference-id: records-manual
         entry-id: "4.3"
   retention-obligations:
     - id: RET-AUDIT-7Y
       kind: minimum
-      authority:
+      implements:
         reference-id: sox-802
         entry-id: "a"
       anchor: collected-at
@@ -65,21 +65,21 @@ adherence:
         - OSPS-AC-02
     - id: RET-PII-MAX
       kind: maximum
-      authority:
+      implements:
         reference-id: gdpr
         entry-id: "art-5-1-e"
       anchor: collected-at
       duration: P1Y
     - id: RET-LIT-3Y
       kind: minimum
-      authority:
+      implements:
         reference-id: records-manual
         entry-id: "6.1"
       anchor: matter-closed
       duration: P3Y
     - id: RET-SUPPORT-PERIOD
       kind: minimum
-      authority:
+      implements:
         reference-id: records-manual
         entry-id: "6.2"
       anchor: support-period-end

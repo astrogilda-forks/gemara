@@ -1864,6 +1864,8 @@ components:
             $ref: "#/components/schemas/RetentionObligationRef"
           minItems: 1
           type: array
+      required:
+      - obligations
       type: object
       x-status: experimental
     RetentionAnchor:
@@ -1930,8 +1932,10 @@ components:
           - $ref: "#/components/schemas/RetentionDuration"
           description: |-
             duration is the period measured from the anchor. Omit it when the obligation runs to
-            the anchor itself, such as keeping records until a support period ends; a zero period
-            is not used for that. An obligation measured from collected-at always states a duration.
+            the anchor itself, such as keeping records until a support period ends, rather than
+            writing a zero period. A zero period stays valid, since a ceiling of P0D from
+            collected-at means the evidence is disposed of when it is collected. An obligation
+            measured from collected-at always states a duration.
         id:
           description: id allows evidence citations to reference this obligation
           type: string

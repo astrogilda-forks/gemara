@@ -123,7 +123,7 @@ import "list"
 #Retention: {
 	// obligations records each retention rule that applies to this evidence and
 	// the instant it resolves to
-	obligations?: [#RetentionObligationRef, ...#RetentionObligationRef]
+	obligations: [#RetentionObligationRef, ...#RetentionObligationRef]
 }
 
 // RetentionObligationRef ties a resolved instant to the obligation that produced it.

@@ -145,6 +145,7 @@ func TestSchemaValidation(t *testing.T) {
 		{"audit log target uri with no scheme", "./test-data/bad-audit-log-uri-no-scheme.yaml", "#AuditLog", true, ""},
 		{"retention obligation reference without an effective instant", "./test-data/bad-audit-log-retention-missing-effective.yaml", "#AuditLog", true, "obligations.1.effective"},
 		{"mutable preservation holds excluded from retention snapshots", "./test-data/bad-audit-log-retention-holds.yaml", "#AuditLog", true, "holds: field not allowed"},
+		{"retention block with no obligations", "./test-data/bad-audit-log-retention-empty.yaml", "#AuditLog", true, "obligations"},
 
 		// CapabilityCatalog — negative
 		{"capability with invalid group", "./test-data/bad-capability-invalid-group.yaml", "#CapabilityCatalog", true, ""},

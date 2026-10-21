@@ -262,8 +262,10 @@ import "list"
 	anchor: #CollectedAtAnchor | string
 
 	// duration is the period measured from the anchor. Omit it when the obligation runs to
-	// the anchor itself, such as keeping records until a support period ends; a zero period
-	// is not used for that. An obligation measured from collected-at always states a duration.
+	// the anchor itself, such as keeping records until a support period ends, rather than
+	// writing a zero period. A zero period stays valid, since a ceiling of P0D from
+	// collected-at means the evidence is disposed of when it is collected. An obligation
+	// measured from collected-at always states a duration.
 	duration?: #RetentionDuration
 
 	// applies-to optionally narrows this obligation to specific assessment requirements
